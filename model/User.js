@@ -13,6 +13,11 @@ const userSchema = new mongoose.Schema({
   password: String,
 });
 
+userSchema.plugin(encrypt, {
+  fields: ["password"],
+  secret: "randomstringforscretkey",
+});
+
 const User = mongoose.model("user", userSchema);
 
 module.exports = User;
