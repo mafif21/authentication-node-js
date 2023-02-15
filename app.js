@@ -3,6 +3,8 @@ const app = express();
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 
+const md5 = require("md5");
+
 const User = require("./model/User");
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -19,7 +21,7 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   const userName = req.body.username;
-  const password = req.body.password;
+  const password = md5(req.body.password);
 
   User.findOne({ username: userName }, (error, findData) => {
     if (error) return console.log("Data not found");
@@ -42,7 +44,7 @@ app.get("/register", (req, res) => {
 
 app.post("/register", (req, res) => {
   const userName = req.body.username;
-  const password = req.body.password;
+  const password = md5(req.body.password);
 
   const newUser = new User({
     username: userName,
