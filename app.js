@@ -3,7 +3,8 @@ const app = express();
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 
-const md5 = require("md5");
+const bcrypt = require("bcrypt");
+const saltRound = 10;
 
 const User = require("./model/User");
 
@@ -21,7 +22,7 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   const userName = req.body.username;
-  const password = md5(req.body.password);
+  const password = req.body.password;
 
   User.findOne({ username: userName }, (error, findData) => {
     if (error) return console.log("Data not found");
@@ -29,11 +30,13 @@ app.post("/login", (req, res) => {
     if (!findData) {
       res.redirect("/login");
     } else {
-      if (findData.password != password) {
-        res.redirect("/login");
-      } else {
-        res.render("secrets");
-      }
+      bcrypt.compare(password, findData.password, (error, result) => {
+        if (result) {
+          res.render("secrets");
+        } else {
+          res.redirect("/login");
+        }
+      });
     }
   });
 });
@@ -44,16 +47,18 @@ app.get("/register", (req, res) => {
 
 app.post("/register", (req, res) => {
   const userName = req.body.username;
-  const password = md5(req.body.password);
+  const password = req.body.password;
 
-  const newUser = new User({
-    username: userName,
-    password: password,
-  });
+  bcrypt.hash(password, saltRound, (error, hash) => {
+    const newUser = new User({
+      username: userName,
+      password: hash,
+    });
 
-  newUser.save((err) => {
-    if (err) return console.log("cant add account");
-    res.render("login");
+    newUser.save((err) => {
+      if (err) return console.log("cant add account");
+      res.render("login");
+    });
   });
 });
 
