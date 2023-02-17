@@ -2,19 +2,19 @@ const mongoose = require("mongoose");
 const url = "mongodb://localhost:27017/secretapp";
 const encrypt = require("mongoose-field-encryption").fieldEncryption;
 const passportLocalMongoose = require("passport-local-mongoose");
+const findOrCreate = require("mongoose-findorcreate");
 require("dotenv").config();
 
 mongoose.set("strictQuery", false);
 mongoose.connect(url);
 
 const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-  },
+  username: String,
   password: String,
+  googleId: String,
 });
 
+userSchema.plugin(findOrCreate);
 userSchema.plugin(passportLocalMongoose);
 
 // userSchema.plugin(encrypt, {

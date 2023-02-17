@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 // session cookie
 const session = require("express-session");
@@ -32,8 +33,35 @@ app.use(passport.session());
 
 // passport-local-mongoose setting
 passport.use(User.createStrategy());
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+// passport.serializeUser(User.serializeUser());
+// passport.deserializeUser(User.deserializeUser());
+
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser((id, done) => {
+  User.findById(id, (err, user) => {
+    done(err, user);
+  });
+});
+
+// google login settings
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
+      callbackURL: "http://localhost:3000/auth/google/secrets",
+      userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
+    },
+    function (accessToken, refreshToken, profile, cb) {
+      User.findOrCreate({ googleId: profile.id }, function (err, user) {
+        return cb(err, user);
+      });
+    }
+  )
+);
 
 app.get("/", (req, res) => {
   res.render("home");
@@ -66,6 +94,19 @@ app.post("/login", (req, res) => {
   });
 });
 
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile"] })
+);
+
+app.get(
+  "/auth/google/secrets",
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  (req, res) => {
+    res.redirect("/secrets");
+  }
+);
+
 app.get("/register", (req, res) => {
   res.render("register");
 });
@@ -90,9 +131,9 @@ app.get("/logout", (req, res) => {
   });
 });
 
-app.use((req, res) => {
-  res.status(404);
-  res.send("<h1>Not Found</h1>");
-});
+// app.use((req, res) => {
+//   res.status(404);
+//   res.send("<h1>Not Found</h1>");
+// });
 
 app.listen(3000, () => console.log("connected"));
