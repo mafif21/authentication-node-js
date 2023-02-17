@@ -69,9 +69,11 @@ app.get("/", (req, res) => {
 
 app.get("/secrets", (req, res) => {
   if (req.isAuthenticated()) {
-    res.render("secrets");
+    User.find({ secret: { $ne: null } }, (error, foundData) => {
+      res.render("secrets", { userSecret: foundData });
+    });
   } else {
-    res.redirect("/register");
+    res.redirect("/login");
   }
 });
 
@@ -122,6 +124,26 @@ app.post("/register", (req, res) => {
       });
     }
   );
+});
+
+app.get("/submit", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.render("submit");
+  } else {
+    res.redirect("/login");
+  }
+});
+
+app.post("/submit", (req, res) => {
+  const secretMessage = req.body.secret;
+
+  User.findById(req.user.id, (error, findUser) => {
+    if (error) return console.log("Data not found");
+
+    findUser.secret.push(secretMessage);
+    findUser.save();
+    res.redirect("/secrets");
+  });
 });
 
 app.get("/logout", (req, res) => {
