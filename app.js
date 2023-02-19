@@ -3,6 +3,7 @@ const app = express();
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const FacebookStrategy = require("passport-facebook").Strategy;
 
 // session cookie
 const session = require("express-session");
@@ -63,6 +64,23 @@ passport.use(
   )
 );
 
+// facebook login settings
+passport.use(
+  new FacebookStrategy(
+    {
+      clientID: process.env.FACEBOOK_ID,
+      clientSecret: process.env.FACEBOOK_SECRET,
+      callbackURL: "http://localhost:3000/auth/facebook/secrets",
+    },
+    function (accessToken, refreshToken, profile, cb) {
+      console.log(profile);
+      User.findOrCreate({ facebookId: profile.id }, function (err, user) {
+        return cb(err, user);
+      });
+    }
+  )
+);
+
 app.get("/", (req, res) => {
   res.render("home");
 });
@@ -105,6 +123,17 @@ app.get(
   "/auth/google/secrets",
   passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
+    res.redirect("/secrets");
+  }
+);
+
+app.get("/auth/facebook", passport.authenticate("facebook"));
+
+app.get(
+  "/auth/facebook/secrets",
+  passport.authenticate("facebook", { failureRedirect: "/login" }),
+  (req, res) => {
+    // Successful authentication, redirect home.
     res.redirect("/secrets");
   }
 );
